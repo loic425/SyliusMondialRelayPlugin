@@ -1,2 +1,2 @@
 imports:
-    - { resource: "@MagentixSyliusMondialRelayPlugin/Resources/config/services.yml" }
+    - { resource: "@WaazSyliusMondialRelayPlugin/Resources/config/services.yml" }

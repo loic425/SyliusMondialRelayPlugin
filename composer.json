@@ -1,13 +1,13 @@
 {
-    "name": "magentix/sylius-mondial-relay-plugin",
+    "name": "waaz/sylius-mondial-relay-plugin",
     "type": "sylius-plugin",
     "description": "Mondial Relay Shipping plugin for Sylius.",
     "license": "GPL-3.0-or-later",
     "version": "1.3.0",
     "require": {
         "php": "^7.2",
-        "sylius/sylius": "~1.3",
-        "bitbag/shipping-export-plugin": "^1.2",
+        "sylius/sylius": "~1.8",
+        "bitbag/shipping-export-plugin": "^1.4",
         "magentix/sylius-pickup-plugin": "^1.3.0"
     },
     "require-dev": {
@@ -18,7 +18,7 @@
     "prefer-stable": true,
     "autoload": {
         "psr-4": {
-            "Magentix\\SyliusMondialRelayPlugin\\": "src/"
+            "Waaz\\SyliusMondialRelayPlugin\\": "src/"
         }
     }
 }

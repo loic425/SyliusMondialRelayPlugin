@@ -12,6 +12,9 @@
     </a>
 </h1>
 
+author [@Magentix] (https://github.com/magentix/SyliusMondialRelayPlugin)
+
+
 # SyliusMondialRelayPlugin
 
 This Plugin allows to add the Mondial Relay delivery method to Sylius.
@@ -41,9 +44,9 @@ With over 40 million parcels delivered through its network of 6500 pick-up point
 ### Sylius >= 1.3.0
 
 ```bash
-$ composer require magentix/sylius-mondial-relay-plugin:^1.3.0
+$ composer require waaz/sylius-mondial-relay-plugin:^1.3.0
 ```
-    
+
 Add the plugins to the `config/bundles.php` file:
 
 ```php
@@ -60,13 +63,13 @@ imports:
     - { resource: "@MagentixSyliusPickupPlugin/Resources/config/config.yml" }
     - { resource: "@MagentixSyliusMondialRelayPlugin/Resources/config/config.yml" }
 ```
-    
+
 Add the plugin's routing by creating the file `config/routes/magentix_sylius_mondial_relay_plugin.yaml` with the following content:
 
 ```yaml
 magentix_sylius_pickup_plugin:
     resource: "@MagentixSyliusPickupPlugin/Resources/config/routing.yml"
-    
+
 bitbag_shipping_export_plugin:
     resource: "@BitBagSyliusShippingExportPlugin/Resources/config/routing.yml"
     prefix: /admin
@@ -114,7 +117,7 @@ imports:
     - { resource: "@MagentixSyliusPickupPlugin/Resources/config/config.yml" }
     - { resource: "@MagentixSyliusMondialRelayPlugin/Resources/config/config.yml" }
 ```
-    
+
 Import routing in your `app/config/routing.yml` file:
 
 ```yaml
@@ -123,7 +126,7 @@ Import routing in your `app/config/routing.yml` file:
 
 magentix_sylius_pickup_plugin:
     resource: "@MagentixSyliusPickupPlugin/Resources/config/routing.yml"
-    
+
 bitbag_shipping_export_plugin:
     resource: "@BitBagSyliusShippingExportPlugin/Resources/config/routing.yml"
     prefix: /admin

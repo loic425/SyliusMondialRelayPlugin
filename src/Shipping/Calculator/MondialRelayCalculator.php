@@ -7,10 +7,10 @@
  */
 declare(strict_types=1);
 
-namespace Magentix\SyliusMondialRelayPlugin\Shipping\Calculator;
+namespace Waaz\SyliusMondialRelayPlugin\Shipping\Calculator;
 
 use Magentix\SyliusPickupPlugin\Shipping\Calculator\CalculatorInterface;
-use Magentix\SyliusMondialRelayPlugin\Repository\PickupRepository;
+use Waaz\SyliusMondialRelayPlugin\Repository\PickupRepository;
 use BitBag\SyliusShippingExportPlugin\Repository\ShippingGatewayRepository;
 use Sylius\Component\Shipping\Model\ShipmentInterface;
 use Sylius\Component\Core\Model\AddressInterface;
@@ -183,7 +183,7 @@ final class MondialRelayCalculator implements CalculatorInterface
      */
     public function getPickupTemplate(): string
     {
-        return '@MagentixSyliusMondialRelayPlugin/checkout/SelectShipping/pickup/list.html.twig';
+        return '@WaazSyliusMondialRelayPlugin/checkout/SelectShipping/pickup/list.html.twig';
     }
 
     /**
@@ -201,7 +201,7 @@ final class MondialRelayCalculator implements CalculatorInterface
             'id'         => join('-', $pickupId),
             'company'    => strtoupper($pickup->LgAdr1),
             'street_1'   => strtolower($pickup->LgAdr3),
-            'street_2'   => strtolower($pickup->LgAdr4),
+            'street_2'   => (property_exists($pickup, 'LgAdr4')) ? strtolower($pickup->LgAdr4) : '',
             'city'       => strtoupper($pickup->Ville),
             'country'    => $pickup->Pays,
             'postcode'   => $pickup->CP,
