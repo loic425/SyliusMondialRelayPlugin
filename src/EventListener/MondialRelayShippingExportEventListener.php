@@ -10,17 +10,24 @@ declare(strict_types=1);
 namespace Waaz\SyliusMondialRelayPlugin\EventListener;
 
 use Waaz\SyliusMondialRelayPlugin\Repository\PickupRepository;
-use BitBag\SyliusShippingExportPlugin\Event\ExportShipmentEvent;
+use Sylius\Bundle\ResourceBundle\Event\ResourceControllerEvent;
 use BitBag\SyliusShippingExportPlugin\Entity\ShippingExportInterface;
 use BitBag\SyliusShippingExportPlugin\Entity\ShippingGatewayInterface;
 use Sylius\Component\Core\Model\OrderInterface;
 use Sylius\Component\Shipping\Model\ShipmentInterface;
 use Magentix\SyliusPickupPlugin\Entity\Shipment;
 use Doctrine\ORM\EntityManager;
+use Webmozart\Assert\Assert;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\HttpFoundation\Session\Flash\FlashBagInterface;
+use Doctrine\Persistence\ObjectManager;
+use Symfony\Component\Filesystem\Filesystem;
 
 final class MondialRelayShippingExportEventListener
 {
+    /** @var FlashBagInterface */
+    private $flashBag;
+
     /**
      * @var PickupRepository $pickupRepository
      */
@@ -31,33 +38,48 @@ final class MondialRelayShippingExportEventListener
      */
     private $shipmentManager;
 
+    /** @var ObjectManager */
+    private $shippingExportManager;
+
+    /** @var Filesystem */
+    private $filesystem;
+
     /**
      * @param PickupRepository $pickupRepository
      * @param EntityManagerInterface|EntityManager $shipmentManager
      */
     public function __construct(
+        FlashBagInterface $flashBag,
         PickupRepository $pickupRepository,
-        EntityManagerInterface $shipmentManager
+        EntityManagerInterface $shipmentManager,
+        string $shippingLabelsPath,
+        Filesystem $filesystem,
+        ObjectManager $shippingExportManager
     ) {
+        $this->flashBag = $flashBag;
         $this->pickupRepository = $pickupRepository;
         $this->shipmentManager = $shipmentManager;
+        $this->shippingLabelsPath = $shippingLabelsPath;
+        $this->filesystem = $filesystem;
+        $this->shippingExportManager = $shippingExportManager;
     }
 
     /**
-     * @param ExportShipmentEvent $event
+     * @param ResourceControllerEvent $event
      * @return void
      */
-    public function exportShipment(ExportShipmentEvent $event): void
+    public function exportShipment(ResourceControllerEvent $event): void
     {
         /** @var ShippingExportInterface $shippingExport */
-        $shippingExport = $event->getShippingExport();
+        $shippingExport = $event->getSubject();
+        Assert::isInstanceOf($shippingExport, ShippingExportInterface::class);
 
-        /** @var ShippingGatewayInterface $shippingGateway */
         $shippingGateway = $shippingExport->getShippingGateway();
+        Assert::notNull($shippingGateway);
 
         $configuration = $shippingGateway->getConfig();
 
-        if (!array_key_exists('mondial_relay', $configuration)) {
+        if ('mondial_relay_shipping_gateway' !== $shippingGateway->getCode()) {
             return;
         }
 
@@ -69,7 +91,7 @@ final class MondialRelayShippingExportEventListener
             $result = $this->createShipping($order, $shipment, $configuration);
 
             if ($result['error']) {
-                $event->addErrorFlash('mondial_relay.pickup.list.error.' . $result['error']);
+                $this->flashBag->add('error', 'mondial_relay.pickup.list.error.' . $result['error']);
                 return;
             }
 
@@ -83,14 +105,15 @@ final class MondialRelayShippingExportEventListener
             );
 
             if ($result['error']) {
-                $event->addErrorFlash('mondial_relay.pickup.list.error.' . $result['error']);
+                $this->flashBag->add('error', 'mondial_relay.pickup.list.error.' . $result['error']);
                 return;
             }
 
             $labelSize = $configuration['label_size'];
             $label = file_get_contents('https://www.mondialrelay.fr' . $result['response']->$labelSize);
 
-            $event->saveShippingLabel($label, 'pdf');
+            //$event->saveShippingLabel($label, 'pdf');
+            $this->saveShippingLabel($shippingExport, $label, 'pdf'); // Save label
         }
 
         $shipment->setState(ShipmentInterface::STATE_SHIPPED);
@@ -99,8 +122,8 @@ final class MondialRelayShippingExportEventListener
         $this->shipmentManager->flush($shipment);
         $this->shipmentManager->flush($order);
 
-        $event->addSuccessFlash();
-        $event->exportShipment();
+        $this->flashBag->add('success', 'bitbag.ui.shipment_data_has_been_exported'); // Add success notification
+        $this->markShipmentAsExported($shippingExport); // Mark shipment as "Exported"
     }
 
     /**
@@ -213,5 +236,51 @@ final class MondialRelayShippingExportEventListener
         $this->pickupRepository->setConfig($configuration);
 
         return $this->pickupRepository->getLabel($data);
+    }
+
+    public function saveShippingLabel(
+        ShippingExportInterface $shippingExport,
+        string $labelContent,
+        string $labelExtension
+    ): void {
+        $labelPath = $this->shippingLabelsPath
+            . '/' . $this->getFilename($shippingExport)
+            . '.' . $labelExtension;
+
+        $this->filesystem->dumpFile($labelPath, $labelContent);
+        $shippingExport->setLabelPath($labelPath);
+
+        $this->shippingExportManager->persist($shippingExport);
+        $this->shippingExportManager->flush();
+    }
+
+    private function getFilename(ShippingExportInterface $shippingExport): string
+    {
+        $shipment = $shippingExport->getShipment();
+        Assert::notNull($shipment);
+
+        $order = $shipment->getOrder();
+        Assert::notNull($order);
+
+        $orderNumber = $order->getNumber();
+
+        $shipmentId = $shipment->getId();
+
+        return implode(
+            '_',
+            [
+                $shipmentId,
+                preg_replace('~[^A-Za-z0-9]~', '', $orderNumber),
+            ]
+        );
+    }
+
+    private function markShipmentAsExported(ShippingExportInterface $shippingExport): void
+    {
+        $shippingExport->setState(ShippingExportInterface::STATE_EXPORTED);
+        $shippingExport->setExportedAt(new \DateTime());
+
+        $this->shippingExportManager->persist($shippingExport);
+        $this->shippingExportManager->flush();
     }
 }
