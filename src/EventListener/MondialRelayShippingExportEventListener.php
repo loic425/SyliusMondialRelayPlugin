@@ -152,24 +152,24 @@ final class MondialRelayShippingExportEventListener
             'NDossier'     => $order->getNumber(),
             'NClient'      => $order->getCustomer()->getId(),
             'Expe_Langage' => $this->getLanguage($configuration['label_shipper_country_code']),
-            'Expe_Ad1'     => $configuration['label_shipper_company'],
+            'Expe_Ad1'     => trim($this->removeaccents($configuration['label_shipper_company'])),
             'Expe_Ad2'     => '',
-            'Expe_Ad3'     => $configuration['label_shipper_street'],
-            'Expe_Ad4'     => '',
-            'Expe_Ville'   => $configuration['label_shipper_city'],
+            'Expe_Ad3'     => trim($this->removeaccents($configuration['label_shipper_street'])),
+            'Expe_Ad4'     => trim($this->removeaccents('')),
+            'Expe_Ville'   => trim($this->removeaccents($configuration['label_shipper_city'])),
             'Expe_CP'      => $configuration['label_shipper_postcode'],
-            'Expe_Pays'    => $configuration['label_shipper_country_code'],
+            'Expe_Pays'    => trim($this->removeaccents($configuration['label_shipper_country_code'])),
             'Expe_Tel1'    => $configuration['label_shipper_phone_number'],
             'Expe_Tel2'    => '',
             'Expe_Mail'    => $configuration['label_shipper_email'],
             'Dest_Langage' => $this->getLanguage($shippingAddress->getCountryCode()),
-            'Dest_Ad1'     => $shippingAddress->getFullName(),
-            'Dest_Ad2'     => $shippingAddress->getCompany(),
-            'Dest_Ad3'     => $shippingAddress->getStreet(),
-            'Dest_Ad4'     => '',
-            'Dest_Ville'   => $shippingAddress->getCity(),
+            'Dest_Ad1'     => trim($this->removeaccents($shippingAddress->getFullName())),
+            'Dest_Ad2'     => trim($this->removeaccents($shippingAddress->getCompany())),
+            'Dest_Ad3'     => trim($this->removeaccents($shippingAddress->getStreet())),
+            'Dest_Ad4'     => trim($this->removeaccents('')),
+            'Dest_Ville'   => trim($this->removeaccents($shippingAddress->getCity())),
             'Dest_CP'      => $shippingAddress->getPostcode(),
-            'Dest_Pays'    => $shippingAddress->getCountryCode(),
+            'Dest_Pays'    => trim($this->removeaccents($shippingAddress->getCountryCode())),
             'Dest_Tel1'    => $shippingAddress->getPhoneNumber(),
             'Dest_Tel2'    => '',
             'Dest_Mail'    => $order->getCustomer()->getEmail(),
@@ -283,4 +283,16 @@ final class MondialRelayShippingExportEventListener
         $this->shippingExportManager->persist($shippingExport);
         $this->shippingExportManager->flush();
     }
+
+    function removeaccents(string $string){ 
+        $stringToReturn = str_replace( 
+        ['à','á','â','ã','ä', 'ç', 'è','é','ê','ë', 'ì','í','î','ï', 'ñ', 'ò','ó','ô','õ','ö', 'ù','ú','û','ü', 'ý','ÿ', 'À','Á','Â','Ã','Ä', 'Ç', 'È','É','Ê','Ë', 'Ì','Í','Î','Ï', 'Ñ', 'Ò','Ó','Ô','Õ','Ö', 'Ù','Ú','Û','Ü', 'Ý','/','\xa8'], 
+        ['a','a','a','a','a', 'c', 'e','e','e','e', 'i','i','i','i', 'n', 'o','o','o','o','o', 'u','u','u','u', 'y','y', 'A','A','A','A','A', 'C', 'E','E','E','E', 'I','I','I','I', 'N', 'O','O','O','O','O', 'U','U','U','U', 'Y',' ','e'], $string);
+        // Remove all remaining other unknown characters
+        $stringToReturn = preg_replace('/[^a-zA-Z0-9\-]/', ' ', $stringToReturn);
+        $stringToReturn = preg_replace('/^[\-]+/', '', $stringToReturn);
+        $stringToReturn = preg_replace('/[\-]+$/', '', $stringToReturn);
+        $stringToReturn = preg_replace('/[\-]{2,}/', ' ', $stringToReturn);
+        return $stringToReturn;
+    } 
 }
