@@ -4,7 +4,7 @@
     "description": "Mondial Relay Shipping plugin for Sylius.",
     "license": "GPL-3.0-or-later",
     "require": {
-        "php": "^7.2",
+        "php": "^7.4 || ^8.0",
         "sylius/sylius": "^1.8",
         "bitbag/shipping-export-plugin": "^1.4",
         "waaz/sylius-pickup-plugin": "^2.0"
